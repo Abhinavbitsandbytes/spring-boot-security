@@ -26,3 +26,22 @@ response - {
     "timeStamp": "2026-01-01T22:28:19.8131536"
 }
 
+
+in spring security, just by adding the dependency, we will be presented with a login form
+this is default behavior of spring security
+in real world application, we will customize it as per our requirement
+
+we also have csrf protection enabled by default in spring security
+the token is present in the hidden input field of the login form
+to disable csrf protection
+we can do it by overriding the configure method of WebSecurityConfigurerAdapter class
+
+this csrf token is required for post, put, delete methods
+for get method, csrf token is not required
+the token is passed in the request header as "X-CSRF-TOKEN"
+
+in real world, we dont use default login form of spring security
+we create our own login form and authenticate the user using authentication manager
+we can also use jwt token for authentication and authorization
+we can also use oauth2 for authentication and authorization
+
