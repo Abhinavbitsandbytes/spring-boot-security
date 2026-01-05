@@ -1,0 +1,28 @@
+This is a decent starter project of SpringBoot
+
+Basic Get, Post, methods will be implemented
+
+
+1 - get - http://localhost:8080/posts
+
+2 - post - http://localhost:8080/posts
+payload - {
+              "title": "This is title 2",
+              "description": "This is description 2"
+          }
+
+3 - get - http://localhost:8080/posts/1
+response - {
+               "id": 1,
+               "title": "This is title 2",
+               "description": "This is description 2"
+           }
+
+4  - get - http://localhost:8080/posts/8
+
+{
+    "error": "post Not found with id10",
+    "statusCode": "404 NOT_FOUND",
+    "timeStamp": "2026-01-01T22:28:19.8131536"
+}
+
