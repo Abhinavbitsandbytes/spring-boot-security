@@ -56,6 +56,7 @@ public class UserService implements UserDetailsService {
         //}
     }
 
+
 }
 // UserDetailsService is a core interface in Spring Security that is used to retrieve user-related data. It has a single method, loadUserByUsername, which is called during the authentication process to load user details based on the provided username (or email in this case). The UserService class implements this interface to provide custom user retrieval logic using the UserRepository.
 // In the loadUserByUsername method, we attempt to find a user by their email using the UserRepository. If the user is found, it is returned as a UserDetails object. If not, a UsernameNotFoundException is thrown, indicating that the user does not exist in the system. This integration allows Spring Security to authenticate users based on the data stored in the database.

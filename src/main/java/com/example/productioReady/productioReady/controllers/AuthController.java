@@ -1,7 +1,9 @@
 package com.example.productioReady.productioReady.controllers;
 
+import com.example.productioReady.productioReady.dto.LoginDTO;
 import com.example.productioReady.productioReady.dto.SignUpDTO;
 import com.example.productioReady.productioReady.dto.UserDTO;
+import com.example.productioReady.productioReady.services.AuthService;
 import com.example.productioReady.productioReady.services.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,11 +18,17 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final UserService userService;
+    private final AuthService authService;
 
     @PostMapping("/signup")
     public ResponseEntity<UserDTO> signUp(@RequestBody SignUpDTO signUpDTO) {
         UserDTO userDto = userService.signUp(signUpDTO);
         return ResponseEntity.ok(userDto);
+    }
 
+    @PostMapping("/login")
+    public ResponseEntity<String> login(@RequestBody LoginDTO loginDTO) {
+        String token = authService.login(loginDTO);
+        return ResponseEntity.ok(token);
     }
 }
