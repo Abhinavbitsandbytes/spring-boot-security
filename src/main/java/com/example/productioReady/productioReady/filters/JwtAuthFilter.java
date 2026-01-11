@@ -8,11 +8,14 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.servlet.HandlerExceptionResolver;
 
 import java.io.IOException;
 
@@ -22,32 +25,77 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final UserService userService;
 
+    @Autowired
+    @Qualifier("handlerExceptionResolver")
+    private HandlerExceptionResolver handlerExceptionResolver;
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         // Get Authorization header and validate JWT
+        try {
+            final String requestTokenHeader = request.getHeader("Authorization");
+            if (requestTokenHeader == null || !requestTokenHeader.startsWith("Bearer ")) {
+                filterChain.doFilter(request, response);
+                return;
+            }
 
-        final String requestTokenHeader = request.getHeader("Authorization");
-        if(requestTokenHeader == null || !requestTokenHeader.startsWith("Bearer ")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
+            String token = requestTokenHeader.split("Bearer ")[1];
 
-        String token = requestTokenHeader.split("Bearer ")[1];
-
-        Long userId = jwtService.getUserIdFromToken(token);
+            Long userId = jwtService.getUserIdFromToken(token);
 // set authentication if userId is valid && SecurityContext is not set
-        if(userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserEntity user = userService.getUserById(userId);
-            UsernamePasswordAuthenticationToken authenticationToken =
-                    new UsernamePasswordAuthenticationToken(user, null, null);
-            authenticationToken.setDetails(
-                    new WebAuthenticationDetailsSource().buildDetails(request)
-            );
-            SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+            if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserEntity user = userService.getUserById(userId);
+                UsernamePasswordAuthenticationToken authenticationToken =
+                        new UsernamePasswordAuthenticationToken(user, null, null);
+                authenticationToken.setDetails(
+                        new WebAuthenticationDetailsSource().buildDetails(request)
+                );
+                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+            }
+            filterChain.doFilter(request, response);
+        } catch (Exception ex) {
+            handlerExceptionResolver.resolveException(request, response, null, ex);
         }
-        filterChain.doFilter(request, response);
     }
+
 }
+
+// before handlerExceptionResolver was added when exception occurred in the filter the response was not being sent properly that's why we added handlerExceptionResolver to handle exceptions properly
+// earlier it was throwing exception like this in postman
+//{
+//        "timestamp": "2026-01-11T10:39:57.203Z",
+//        "status": 500,
+//        "error": "Internal Server Error",
+//        "path": "/posts/1"
+//        }
+//  now after adding handlerExceptionResolver it is throwing proper exception like this
+//{
+//        "error": "JWT expired 723678 milliseconds ago at 2026-01-11T10:31:02.000Z. Current time: 2026-01-11T10:43:05.678Z. Allowed clock skew: 0 milliseconds.",
+//        "statusCode": "401 UNAUTHORIZED",
+//        "timeStamp": "2026-01-11T16:13:05.7334016"
+//        }
+
+// handlerExceptionResolver takes 4 parameters HttpServletRequest request, HttpServletResponse response,
+// Object handler, Exception ex
+// we are passing null for handler because we don't have handler object in filter
+// The JwtAuthFilter is a custom filter that handles JWT authentication for incoming HTTP requests.
+// It intercepts requests, extracts the JWT token from the Authorization header, validates it,
+// and sets the authentication in the SecurityContext if the token is valid.
+// In this code, we have two dependencies injected via constructor injection using @RequiredArgsConstructor:
+// 1. JwtService: This service is responsible for handling JWT-related operations, such as extracting
+// the user ID from the token.
+// 2. UserService: This service is used to retrieve user details based on the user ID extracted from the JWT token.
+// The doFilterInternal method is overridden to implement the filtering logic. It performs the following steps:
+// 1. It retrieves the Authorization header from the incoming HTTP request.
+// 2. It checks if the header is null or does not start with "Bearer ". If so, it continues the filter chain
+// without further processing.
+// 3. It extracts the JWT token from the Authorization header.
+// 4. It uses the JwtService to extract the user ID from the token.
+// 5. If a user ID is found and the SecurityContext is not already set, it retrieves the corresponding UserEntity using the UserService.
+// 6. It creates a UsernamePasswordAuthenticationToken with the user details and sets it in the SecurityContext.
+// 7. Finally, it continues the filter chain, allowing the request to proceed.
+// Additionally, we have added a HandlerExceptionResolver to handle exceptions that may occur during the filtering process. If an exception is thrown, it is resolved using the handlerExceptionResolver, which ensures that proper error responses are sent back to the client.
+// Overall,
 
 // here we have created a JwtAuthFilter that extends OncePerRequestFilter. This filter intercepts incoming HTTP requests, extracts the JWT token from the Authorization header, validates it, and sets the authentication in the SecurityContext if the token is valid. This allows us to secure our endpoints and ensure that only authenticated users can access them.
 // Now, when you make requests to secured endpoints, the JwtAuthFilter will validate the JWT token and authenticate the user accordingly.
